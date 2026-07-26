@@ -4,6 +4,7 @@ import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import re
+from zone import ZoneInfo
 
 app = Flask(__name__)
 
@@ -48,7 +49,7 @@ def whatsapp_webhook():
     total_count = veg_count + nonveg_count
 
     # Get current date details
-    today = datetime.datetime.now()
+    today = datetime.datetime.now(ZoneInfo("Asia/Kolkata"))
     day_name = today.strftime("%A")
     date_str = today.strftime("%Y-%m-%d")
     timestamp = today.strftime("%H:%M:%S")
