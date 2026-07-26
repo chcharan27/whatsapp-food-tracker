@@ -44,6 +44,40 @@ SUMMARY_GREY = {"red": 0.94, "green": 0.94, "blue": 0.94}# Summary Row Backgroun
 WHITE = {"red": 1.0, "green": 1.0, "blue": 1.0}
 
 def create_monthly_section(sheet, month_year_str):
+    """Inserts a merged monthly banner and separate styled table headers."""
+    # 1. Append Month Banner (e.g., "JULY 2026")
+    sheet.append_row([month_year_str, "", "", "", "", ""])
+    banner_row = len(sheet.get_all_values())
+    
+    # Merge cells across all 6 columns for Month Banner
+    sheet.merge_cells(f"A{banner_row}:F{banner_row}")
+    
+    # Style Month Banner
+    sheet.format(f"A{banner_row}:F{banner_row}", {
+        "backgroundColor": DARK_NAVY,
+        "textFormat": {"foregroundColor": WHITE, "bold": True, "fontSize": 12},
+        "horizontalAlignment": "CENTER",
+        "verticalAlignment": "MIDDLE"
+    })
+    
+    # 2. Append Table Headers
+    headers = ["Date", "Day", "Veg Count", "Non-Veg Count", "Total Headcount", "Timestamp"]
+    sheet.append_row(headers)
+    header_row = banner_row + 1
+    
+    # CRITICAL FIX: Ensure cells in header row are NOT merged
+    try:
+        sheet.unmerge_cells(f"A{header_row}:F{header_row}")
+    except Exception:
+        pass  # Safe fallback if already unmerged
+
+    # Style Table Headers
+    sheet.format(f"A{header_row}:F{header_row}", {
+        "backgroundColor": LIGHT_BLUE,
+        "textFormat": {"foregroundColor": {"red": 0.1, "green": 0.1, "blue": 0.1}, "bold": True, "fontSize": 10},
+        "horizontalAlignment": "CENTER",
+        "verticalAlignment": "MIDDLE"
+    })
     """Inserts a merged monthly banner and styled table headers."""
     sheet.append_row([month_year_str, "", "", "", "", ""])
     last_row = len(sheet.get_all_values())
