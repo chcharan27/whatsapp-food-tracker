@@ -3,3 +3,4 @@ keys/google_credentials.json
 
 # Python virtual env 
 venv
+.vercel
