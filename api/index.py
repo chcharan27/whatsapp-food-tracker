@@ -14,7 +14,6 @@ app = Flask(__name__)
 # --- Configuration & Security ---
 ALLOWED_ADMINS = [
     "whatsapp:+919010982381",
-    "whatsapp:+917674039974",
 ]
 
 TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID")
@@ -51,8 +50,6 @@ def create_monthly_section(sheet, month_year_str):
     
     # Merge cells across all 6 columns for Month Banner
     sheet.merge_cells(f"A{banner_row}:F{banner_row}")
-    
-    # Style Month Banner
     sheet.format(f"A{banner_row}:F{banner_row}", {
         "backgroundColor": DARK_NAVY,
         "textFormat": {"foregroundColor": WHITE, "bold": True, "fontSize": 12},
@@ -65,7 +62,7 @@ def create_monthly_section(sheet, month_year_str):
     sheet.append_row(headers)
     header_row = banner_row + 1
     
-    # CRITICAL FIX: Ensure cells in header row are NOT merged
+    # Ensure cells in header row are NOT merged
     try:
         sheet.unmerge_cells(f"A{header_row}:F{header_row}")
     except Exception:
@@ -75,28 +72,6 @@ def create_monthly_section(sheet, month_year_str):
     sheet.format(f"A{header_row}:F{header_row}", {
         "backgroundColor": LIGHT_BLUE,
         "textFormat": {"foregroundColor": {"red": 0.1, "green": 0.1, "blue": 0.1}, "bold": True, "fontSize": 10},
-        "horizontalAlignment": "CENTER",
-        "verticalAlignment": "MIDDLE"
-    })
-    """Inserts a merged monthly banner and styled table headers."""
-    sheet.append_row([month_year_str, "", "", "", "", ""])
-    last_row = len(sheet.get_all_values())
-    
-    sheet.merge_cells(f"A{last_row}:F{last_row}")
-    sheet.format(f"A{last_row}:F{last_row}", {
-        "backgroundColor": DARK_NAVY,
-        "textFormat": {"foregroundColor": WHITE, "bold": True, "fontSize": 12},
-        "horizontalAlignment": "CENTER",
-        "verticalAlignment": "MIDDLE"
-    })
-    
-    headers = ["Date", "Day", "Veg Count", "Non-Veg Count", "Total Headcount", "Timestamp"]
-    sheet.append_row(headers)
-    header_row = last_row + 1
-    
-    sheet.format(f"A{header_row}:F{header_row}", {
-        "backgroundColor": LIGHT_BLUE,
-        "textFormat": {"bold": True, "fontSize": 10},
         "horizontalAlignment": "CENTER",
         "verticalAlignment": "MIDDLE"
     })
@@ -219,25 +194,27 @@ def whatsapp_webhook():
 
     try:
         all_values = sheet.get_all_values()
-        month_exists = any(row and row[0] == month_year_str for row in all_values)
-        
+
+        # 1. Ensure current month header exists
+        month_exists = any(row and len(row) > 0 and row[0].strip().upper() == month_year_str for row in all_values)
         if not month_exists:
             create_monthly_section(sheet, month_year_str)
-            all_values = sheet.get_all_values()
+            all_values = sheet.get_all_values()  # Refresh rows after appending header
 
-        dates_in_sheet = [row[0] if row else "" for row in all_values]
+        # 2. Build row data
         row_data = [date_str, day_name, veg_count, nonveg_count, total_count, timestamp]
+
+        # 3. Check if today's date already exists in Column A
+        dates_in_sheet = [row[0].strip() if row else "" for row in all_values]
 
         if date_str in dates_in_sheet:
             row_index = dates_in_sheet.index(date_str) + 1
-            cell_range = f"A{row_index}:F{row_index}"
-            sheet.update(cell_range, [row_data])
+            sheet.update(f"A{row_index}:F{row_index}", [row_data])
             status_text = "🔄 *Headcount Updated!*"
         else:
             sheet.append_row(row_data)
-            last_row = len(sheet.get_all_values())
-            
-            sheet.format(f"A{last_row}:F{last_row}", {
+            new_row_index = len(all_values) + 1
+            sheet.format(f"A{new_row_index}:F{new_row_index}", {
                 "horizontalAlignment": "CENTER",
                 "verticalAlignment": "MIDDLE"
             })
