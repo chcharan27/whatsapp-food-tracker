@@ -1,0 +1,4 @@
+install packages: winget install ngrok/ngrok
+twilio recovery code:7C3GL1BCGEFH2K4CYS6XK2KB
+
+To run: ngrk http 5000
