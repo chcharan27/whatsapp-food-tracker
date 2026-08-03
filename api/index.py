@@ -42,6 +42,59 @@ LIGHT_BLUE = {"red": 0.89, "green": 0.93, "blue": 0.98}  # Column Header Backgro
 SUMMARY_GREY = {"red": 0.94, "green": 0.94, "blue": 0.94}# Summary Row Background
 WHITE = {"red": 1.0, "green": 1.0, "blue": 1.0}
 
+def parse_month_year(msg_text, default_datetime):
+    """
+    Parses dynamic month/year inputs like:
+    'summary', 'jan 2025', 'april', 'report dec 24', 'monthly summary march 2026'
+    Returns formatted string like 'JANUARY 2025' or None if invalid.
+    """
+    msg_clean = msg_text.lower().strip()
+
+    # Base list of keywords that trigger a summary request
+    summary_keywords = ["summary", "report", "monthly summary", "stats"]
+    is_summary_request = any(kw in msg_clean for kw in summary_keywords)
+
+    months_map = {
+        "jan": "JANUARY", "january": "JANUARY",
+        "feb": "FEBRUARY", "february": "FEBRUARY",
+        "mar": "MARCH", "march": "MARCH",
+        "apr": "APRIL", "april": "APRIL",
+        "may": "MAY",
+        "jun": "JUNE", "june": "JUNE",
+        "jul": "JULY", "july": "JULY",
+        "aug": "AUGUST", "august": "AUGUST",
+        "sep": "SEPTEMBER", "sept": "SEPTEMBER", "september": "SEPTEMBER",
+        "oct": "OCTOBER", "october": "OCTOBER",
+        "nov": "NOVEMBER", "november": "NOVEMBER",
+        "dec": "DECEMBER", "december": "DECEMBER"
+    }
+
+    # Search for a month keyword in message
+    matched_month = None
+    for token in msg_clean.split():
+        if token in months_map:
+            matched_month = months_map[token]
+            break
+
+    # If no specific month found but user typed a summary keyword, default to current month
+    if not matched_month:
+        if is_summary_request:
+            return default_datetime.strftime("%B %Y").upper()
+        return None
+
+    # Search for a year (4 digits or 2 digits)
+    year_match = re.search(r'\b(20\d{2}|\d{2})\b', msg_clean)
+    if year_match:
+        year_str = year_match.group(1)
+        if len(year_str) == 2:
+            year_str = f"20{year_str}"
+    else:
+        # Default to current year if omitted
+        year_str = default_datetime.strftime("%Y")
+
+    return f"{matched_month} {year_str}"
+
+
 def create_monthly_section(sheet, month_year_str):
     """Inserts a merged monthly banner and separate styled table headers."""
     # 1. Append Month Banner (e.g., "JULY 2026")
@@ -135,16 +188,18 @@ def whatsapp_webhook():
         print(f"Sheet connection error: {e}")
         return str(resp)
 
-    if incoming_msg in ["summary", "report", "monthly summary"]:
+    # --- Dynamic Summary Processing ---
+    requested_summary_month = parse_month_year(incoming_msg, today)
+    if requested_summary_month:
         try:
             all_values = sheet.get_all_values()
-            stats = compute_monthly_summary(all_values, month_year_str)
+            stats = compute_monthly_summary(all_values, requested_summary_month)
             
             if stats["days"] == 0:
-                reply.body(f"📊 No entries recorded yet for *{month_year_str}*.")
+                reply.body(f"📊 No entries recorded yet for *{requested_summary_month}*.")
             else:
                 reply.body(
-                    f"📊 *Monthly Summary — {month_year_str}*\n"
+                    f"📊 *Monthly Summary — {requested_summary_month}*\n"
                     f"━━━━━━━━━━━━━━━━━━━━\n"
                     f"📅 *Days Recorded:* {stats['days']} days\n\n"
                     f"🥗 *Total Veg:* {stats['veg_total']} (Avg: {stats['avg_veg']}/day)\n"
@@ -181,11 +236,12 @@ def whatsapp_webhook():
         if not numbers:
             reply.body(
                 "⚠️ *Invalid Format!*\n\n"
-                "Please specify counts using keywords or type *summary*.\n"
+                "Please specify counts using keywords or request a summary.\n"
                 "👉 *Examples:*\n"
                 "• `5 veg 10 nonveg`\n"
                 "• `8 veg`\n"
-                "• `summary` (for monthly stats)"
+                "• `summary` (current month)\n"
+                "• `Jan 2025` or `summary april`"
             )
             return str(resp)
         veg_count = int(numbers[0])
