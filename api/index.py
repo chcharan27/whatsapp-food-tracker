@@ -216,11 +216,11 @@ def whatsapp_webhook():
         reply.body(f"🚫 Today is {day_name}. Food tracking is active Mon-Fri only.")
         return str(resp)
 
-    cutoff_time = datetime.time(11, 30, 0)
+    cutoff_time = datetime.time(18, 30, 0)
     if today.time() > cutoff_time:
         reply.body(
             f"⏰ *Cut-off Time Passed!*\n\n"
-            f"Headcounts must be submitted before *11:30 AM IST*.\n"
+            f"Headcounts must be submitted before *6:30 PM IST*.\n"
             f"Current time: {today.strftime('%I:%M %p IST')}"
         )
         return str(resp)
@@ -309,7 +309,7 @@ def send_reminder():
     
     reminder_text = (
         "🔔 *Daily Food Headcount Reminder*\n\n"
-        "Good morning! Please reply with today's lunch headcount before *11:30 AM IST*.\n"
+        "Good morning! Please reply with today's lunch headcount before *18:30 PM IST*.\n"
         "👉 *Example:* `5 veg 10 nonveg`"
     )
 
