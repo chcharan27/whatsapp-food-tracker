@@ -13,7 +13,7 @@ app = Flask(__name__)
 
 # --- Configuration & Security ---
 ALLOWED_ADMINS = [
-    "whatsapp:+919010982381",
+    "whatsapp:+919010982381","whatsapp:+917674039974"
 ]
 
 TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID")
